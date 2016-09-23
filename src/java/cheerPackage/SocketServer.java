@@ -154,7 +154,7 @@ public class SocketServer {
      *            message to be sent to clients
      * @param isNewClient
      *            flag to identify that message is about new person joined
-     * @param isExit
+     * @param isExitrooms
      *            flag to identify that a person left the conversation
      * */
     private void sendMessageToAll(String sessionId, String room, String name,
