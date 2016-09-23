@@ -94,7 +94,7 @@ public class SocketServer {
         }
  
         // Notifying all the clients about new person joined
-        sendMessageToAll(session.getId(), name, " joined conversation!", true,
+        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("room"), name, " joined conversation!", true,
                 false);
  
     }
@@ -122,7 +122,7 @@ public class SocketServer {
         }
  
         // Sending the message to all clients
-        sendMessageToAll(session.getId(), nameSessionPair.get(session.getId()),
+        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("room"), nameSessionPair.get(session.getId()),
                 msg, false, false);
     }
  
@@ -141,7 +141,7 @@ public class SocketServer {
         sessions.remove(session);
  
         // Notifying all the clients about person exit
-        sendMessageToAll(session.getId(), name, " left conversation!", false,
+        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("room"), name, " left conversation!", false,
                 true);
  
     }
@@ -157,12 +157,16 @@ public class SocketServer {
      * @param isExit
      *            flag to identify that a person left the conversation
      * */
-    private void sendMessageToAll(String sessionId, String name,
+    private void sendMessageToAll(String sessionId, String room, String name,
             String message, boolean isNewClient, boolean isExit) {
  
         // Looping through all the sessions and sending the message individually
         for (Session s : sessions) {
             String json = null;
+            
+            if(room != s.getUserProperties().get("room")){
+                continue;
+            }
  
             // Checking if the message is about new client joined
             if (isNewClient) {
