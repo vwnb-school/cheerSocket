@@ -164,7 +164,7 @@ public class SocketServer {
         for (Session s : sessions) {
             String json = null;
             
-            if(room != s.getUserProperties().get("room")){
+            if( !room.equals(s.getUserProperties().get("room")) ){
                 continue;
             }
  
