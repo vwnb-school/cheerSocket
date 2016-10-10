@@ -7,6 +7,12 @@
     </h:head>
     <h:body>
         Hello from Facelets
+        
+        <h:form>
+            <h:dataTable value="#{viewController.listMatches}" var = "item">
+                <h:column>#{item.id}</h:column> 
+            </h:dataTable>
+        </h:form>    
     </h:body>
 </html>
 

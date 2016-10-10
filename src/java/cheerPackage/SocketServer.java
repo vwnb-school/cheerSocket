@@ -20,15 +20,31 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
- 
+import HttpUtil.HttpUtility; 
 import org.json.JSONException;
 import org.json.JSONObject;
  
 import com.google.common.collect.Maps;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.net.URLEncoder;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
 import javax.websocket.server.PathParam;
+import org.json.JSONArray;
+import controller.ViewController;
+import java.util.Date;
+import model.Matches;
+import services.DBservice;
  
 @ServerEndpoint(value = "/chat/{room}")
 public class SocketServer {
+    private String res;
+    private String tournamentName = "MLG Columbus 2018 CS:GO Major";
+    ViewController viewCtrl = new ViewController();
  
     // set to store all the live sessions
     private static final Set<Session> sessions = Collections
@@ -51,6 +67,164 @@ public class SocketServer {
         }
         return map;
     }
+   
+    @PostConstruct
+    public void init() {
+        
+         
+        System.out.println("=====================================");
+         
+        // test sending POST request
+        Map<String, String> params = new HashMap<String, String>();
+        String requestURL = "https://api.toornament.com/oauth/v2/token";
+        params.put("client_id", );
+        params.put("client_secret", );
+        params.put("grant_type", "client_credentials");
+         
+        try {
+            HttpUtility.sendPostRequest(requestURL, params);
+            String[] response = HttpUtility.readMultipleLinesRespone();
+            for (String line : response) {
+                res = line;
+                //System.out.println(line);
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        HttpUtility.disconnect();
+        /**JsonParser parser = new JsonParser();
+        JsonElement json = parser.parse(res);
+        JsonObject object = json.getAsJsonObject();
+        object.toString();**/
+        //String token = object.get("access_token").getAsString();
+        String token = null;
+        try {
+            token = getAccessToken(res,"access_token");
+            //System.out.println(gson.toJson(resWithBearer));
+            //System.out.println("HERE IS MY TOKEN");
+            //System.out.println(token);
+        } catch (JSONException ex) {
+            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        try {
+            requestURL = "https://api.toornament.com/v1/tournaments" + "?name=" +  URLEncoder.encode(tournamentName, "UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        try {
+            HttpUtility.sendGetRequest(requestURL , token);
+            String[] response = HttpUtility.readMultipleLinesRespone();
+            for (String line : response) {
+                //System.out.println("HERE the tournament with requested name...");
+                res= line;
+                
+                //System.out.println(line);
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        HttpUtility.disconnect();
+        String tournament_id = null;
+        try {
+            tournament_id =getMatchesByTurnament_id(res, "id");
+            } catch (JSONException ex) {
+            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        requestURL = "https://api.toornament.com/v1/tournaments/" + tournament_id   +"/matches";
+        try {
+            HttpUtility.sendGetRequest(requestURL , token);
+            String[] response = HttpUtility.readMultipleLinesRespone();
+            for (String line : response) {
+                res = line;
+                System.out.println("HERE IS ALL MATCHESSSS  ::::::.....");
+                System.out.println(line);
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        HttpUtility.disconnect();
+        
+   
+        try {
+            insertTournamentMatchesToDB(res);
+        } catch (JSONException ex) {
+            System.out.println("THROWING EXCEPTION");
+            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
+            
+        }
+       
+         
+    
+    }
+    public String getAccessToken (String res, String title) throws JSONException{
+        String value = null;
+            //just a single Json Object
+            JsonParser parser = new JsonParser();
+            JsonElement json = parser.parse(res);
+            System.out.println(json);
+            System.out.println("HERE IS MY value ---->>>");  
+            JsonObject object = json.getAsJsonObject();
+            System.out.println(object.toString());
+            object.toString();
+            value = object.get(title).getAsString();
+            
+            return value;
+        }
+    public String getMatchesByTurnament_id(String res, String title) throws JSONException{
+        String value = null;
+        if(res.charAt(0)=='['){
+            JSONArray jsonArray = new JSONArray(res); 
+            System.out.println("\n"+"\n"+"\n"+"\n"+"\n"+"\n"+"\n"+"\n");
+            System.out.println("PRINT JSON ARRAY -->>>>>");
+            System.out.println(jsonArray.getJSONObject(0).get(title));
+            value = (String) jsonArray.getJSONObject(0).get(title);
+         }
+        return value; 
+    }
+    
+    public void insertTournamentMatchesToDB(String res) throws JSONException{
+        
+        //cant deal with null information -->>>>>
+        Matches match = new Matches();
+        System.out.println("calling from socketServer ...");
+        //convert res json Array
+        JSONArray jsonArray = new JSONArray(res);
+        //iterate JSONobj in the array inserting the to DB..
+        for (int i = 0; i < jsonArray.length(); i++) {
+            //System.out.println("from for loop the OBJECT");
+            JsonParser parser = new JsonParser();
+            JsonElement json = parser.parse(jsonArray.get(i).toString());
+            JsonObject object = json.getAsJsonObject();
+            object.toString();
+            match.setId(object.get("id").getAsString());
+            match.setType(object.get("type").getAsString());
+            match.setDiscipline(object.get("discipline").getAsString());
+            match.setStatus(object.get("status").getAsString());
+            match.setTournamentId(object.get("tournament_id").getAsString());
+            match.setNumber(object.get("number").getAsInt());
+            match.setStageNumber(object.get("stage_number").getAsInt());
+            match.setGroupNumber(object.get("group_number").getAsInt());
+            match.setRoundNumber(object.get("round_number").getAsInt());
+            
+            //match.setTimezone("FI");
+            /**if(object.get("timeZone").getAsString() == null){
+                System.out.println("THE TIMEZONE...");
+                match.setTimezone("FI");
+            }else{
+                match.setTimezone(object.get("timeZone").getAsString());
+            }**/
+            
+            match.setMatchFormat("knockout");
+            match.setOpponents(object.get("opponents").toString());
+            /**Date today = new Date();
+            today.setHours(0); today.setMinutes(0); today.setSeconds(0);
+            match.setDate(today);**/
+            viewCtrl.insertMatches(match);
+        }
+        
+    }
+    
  
     /**
      * Called when a socket connection opened
