@@ -72,8 +72,9 @@ public class Matches implements Serializable {
     private Integer roundNumber;
     @Column(name = "date")
     @Basic(optional=true)
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date date;
+    @Size(max = 45)
+    //@Temporal(TemporalType.TIMESTAMP)
+    private String date;
     @Size(max = 45)
     @Column(name = "timezone")
     private String timezone;
@@ -88,7 +89,7 @@ public class Matches implements Serializable {
     public Matches() {
     }
 
-    public Matches(String id, String type, String discipline, String status, String tournamentId, Integer number, Integer stageNumber, Integer groupNumber, Integer roundNumber, Date date, String timezone, String matchFormat, String opponents) {
+    public Matches(String id, String type, String discipline, String status, String tournamentId, Integer number, Integer stageNumber, Integer groupNumber, Integer roundNumber, String date, String timezone, String matchFormat, String opponents) {
         this.id = id;
         this.type = type;
         this.discipline = discipline;
@@ -180,11 +181,11 @@ public class Matches implements Serializable {
         this.roundNumber = roundNumber;
     }
 
-    public Date getDate() {
+    public String getDate() {
         return date;
     }
 
-    public void setDate(Date date) {
+    public void setDate(String date) {
         this.date = date;
     }
 

@@ -37,6 +37,7 @@ import javax.websocket.server.PathParam;
 import org.json.JSONArray;
 import controller.ViewController;
 import java.util.Date;
+import javax.ejb.EJB;
 import model.Matches;
 import services.DBservice;
  
@@ -44,8 +45,11 @@ import services.DBservice;
 public class SocketServer {
     private String res;
     private String tournamentName = "MLG Columbus 2018 CS:GO Major";
-    ViewController viewCtrl = new ViewController();
- 
+    //ViewController viewCtrl = new ViewController();
+    //ViewController viewCtrl;
+    @EJB
+    DBservice dbs;
+    
     // set to store all the live sessions
     private static final Set<Session> sessions = Collections
             .synchronizedSet(new HashSet<Session>());
@@ -77,8 +81,8 @@ public class SocketServer {
         // test sending POST request
         Map<String, String> params = new HashMap<String, String>();
         String requestURL = "https://api.toornament.com/oauth/v2/token";
-        params.put("client_id", );
-        params.put("client_secret", );
+        params.put("client_id", "57e98f68150ba076398b456c5q9hvtpk3tgc00kk8s4sgckow40gs4080wgc48ogsc4wg04o8c");
+        params.put("client_secret", "5l9wwq20nugw4gswgoso088gw80wccgcw8sco44oo4g84ooco8");
         params.put("grant_type", "client_credentials");
          
         try {
@@ -207,7 +211,7 @@ public class SocketServer {
             match.setGroupNumber(object.get("group_number").getAsInt());
             match.setRoundNumber(object.get("round_number").getAsInt());
             
-            //match.setTimezone("FI");
+            match.setTimezone("FI");
             /**if(object.get("timeZone").getAsString() == null){
                 System.out.println("THE TIMEZONE...");
                 match.setTimezone("FI");
@@ -220,7 +224,8 @@ public class SocketServer {
             /**Date today = new Date();
             today.setHours(0); today.setMinutes(0); today.setSeconds(0);
             match.setDate(today);**/
-            viewCtrl.insertMatches(match);
+            //viewCtrl.insertMatches(match);
+            dbs.insert(match);
         }
         
     }

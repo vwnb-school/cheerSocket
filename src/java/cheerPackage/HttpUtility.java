@@ -49,7 +49,7 @@ public class HttpUtility {
         httpConn = (HttpURLConnection) url.openConnection();
         httpConn.setUseCaches(false);
         httpConn.setRequestProperty("Authorization", "bearer " + header);
-        httpConn.setRequestProperty("X-api-key", "");
+        httpConn.setRequestProperty("X-api-key", "8J1jY7zpC5mYzukYdWcGxws3Z3FDzMHLInrx5ib_a4g");
        // httpConn.setRequestProperty ("Authorization", basicAuth);
 
         httpConn.setDoInput(true); // true if we want to read server's response

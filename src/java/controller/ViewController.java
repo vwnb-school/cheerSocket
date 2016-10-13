@@ -35,7 +35,7 @@ import org.hibernate.validator.constraints.Email;
 public class ViewController implements Serializable {
 
     @EJB
-    private DBservice DBservice;
+    private DBservice dBservice;
     
     private List<Matches> listMatches;
     private Matches matches;
@@ -48,7 +48,7 @@ public class ViewController implements Serializable {
     @PostConstruct
     public void init(){
         matches = new Matches();
-        listMatches = DBservice.getMatches();
+        listMatches = dBservice.getMatches();
     }
     
     public Matches getMatches(){
@@ -73,15 +73,15 @@ public class ViewController implements Serializable {
            System.out.println(m.getStageNumber());
            System.out.println(m.getRoundNumber());
            System.out.println(m.getGroupNumber());
-           /**System.out.println(m.getDate());**/
+           //System.out.println(m.getDate());
            System.out.println(m.getTimezone());
            System.out.println(m.getMatchFormat());
            System.out.println(m.getOpponents());
            System.out.println("im stuck here"); 
            //System.out.println(DBservice.insert(matches));
-           //DBservice.insert(m);
-           DBservice db = new DBservice() ;
-           db.insert(m);
+           dBservice.insert(m);
+           //DBservice db = new DBservice() ;
+           //db.insert(m);
            //DBservice.insert(m);
     }
     /**public void updatePeople(People p){
