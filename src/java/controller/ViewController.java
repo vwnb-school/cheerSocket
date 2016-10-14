@@ -11,20 +11,20 @@ import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
 import javax.inject.Named;
 import javax.enterprise.context.SessionScoped;
-import javax.faces.application.FacesMessage;
-import javax.faces.component.UIComponent;
-import javax.faces.component.UIInput;
-import javax.faces.context.FacesContext;
+//import javax.faces.application.FacesMessage;
+//import javax.faces.component.UIComponent;
+//import javax.faces.component.UIInput;
+//import javax.faces.context.FacesContext;
 //import javax.persistence.EntityManager;
 //import javax.persistence.EntityTransaction;
 //import javax.persistence.Persistence;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+//import javax.validation.constraints.Max;
+//import javax.validation.constraints.Min;
+//import javax.validation.constraints.Pattern;
+//import javax.validation.constraints.Size;
 import model.Matches;
 import services.DBservice;
-import org.hibernate.validator.constraints.Email;
+//import org.hibernate.validator.constraints.Email;
 
 /**
  *
@@ -43,10 +43,12 @@ public class ViewController implements Serializable {
      * Creates a new instance of ViewController
      */
     public ViewController() {
+        System.out.println("Created...........");
     }
     
     @PostConstruct
     public void init(){
+        System.out.println("Created and init...");
         matches = new Matches();
         listMatches = dBservice.getMatches();
     }

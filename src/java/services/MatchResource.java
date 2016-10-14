@@ -53,7 +53,7 @@ public class MatchResource {
         //throw new UnsupportedOperationException();
         
         java.util.Date date = new java.util.Date();
-        System.out.println("current TimeStamp");
+        System.out.println("current TimeStamp" + date);
         long tmpResult = 0;
         long result = 0;
         int j = 0;
