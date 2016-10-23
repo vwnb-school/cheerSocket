@@ -20,27 +20,13 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-import HttpUtil.HttpUtility; 
 import org.json.JSONException;
 import org.json.JSONObject;
  
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.stream.MalformedJsonException;
-import java.net.URLEncoder;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.websocket.server.PathParam;
-import org.json.JSONArray;
-import controller.ViewController;
-import java.util.Date;
 import javax.ejb.EJB;
-import model.Matches;
 import services.DBservice;
  
 @ServerEndpoint(value = "/cheer/{match}")
@@ -54,8 +40,7 @@ public class SocketServer {
     DBservice dbs;
     
     // set to store all the live sessions
-    private static final Set<Session> sessions = Collections
-            .synchronizedSet(new HashSet<Session>());
+    private static final Set<Session> sessions = Collections.synchronizedSet(new HashSet<Session>());
  
     // Mapping between session and person name
     private static final HashMap<String, String> nameSessionPair = new HashMap<String, String>();
@@ -63,118 +48,26 @@ public class SocketServer {
     // Getting query params
     public static Map<String, String> getQueryMap(String query) {
         Map<String, String> map = Maps.newHashMap();
-        if (query != null) {
-            String[] params = query.split("&");
-            for (String param : params) {
-                String[] nameval = param.split("=");
+        if (query != null) {           
+            if (query.contains("&")){
+                String[] params = query.split("&");
+                for (String param : params) {
+                    String[] nameval = param.split("=");
+                    map.put(nameval[0], nameval[1]);
+                }
+            } else {
+                String[] nameval = query.split("=");
                 map.put(nameval[0], nameval[1]);
-            }
+            }        
+        } else {
+            System.out.println("Query "+query+" did not have any parameters.");
         }
         return map;
     }
    
     @PostConstruct
     public void init() {
-        boolean updateMatches = false;
-        if(updateMatches){
-            try {
-                System.out.println("=====================================");       
-                String authTokenRaw = requestToornamentAuthToken();            
-                String requestURL = "https://api.toornament.com/v1/tournaments" + "?name=" +  URLEncoder.encode(tournamentName, "UTF-8");
-                String tournamentInfoRaw = getTournamentInfo(authTokenRaw, requestURL);
-                String matchesRaw = getTournamentMatches(authTokenRaw, tournamentInfoRaw);
-                insertTournamentMatchesToDB(matchesRaw);
-            } catch (JSONException | MalformedJsonException | JsonSyntaxException | UnsupportedEncodingException ex) {
-                Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
-                ex.printStackTrace();
-            }
-        }
         System.out.println("Socket server class initialized.");
-    }
-    
-    public String getTournamentInfo(String authTokenRaw, String URL) throws MalformedJsonException, JsonSyntaxException {           
-        StringBuilder sb = new StringBuilder();
-        try {
-            String authToken = JSONUtils.getJsonAttributeValue(authTokenRaw, "access_token");
-            HttpUtility.sendGetRequest(URL , authToken);
-            String[] response = HttpUtility.readMultipleLinesRespone();
-            for (String line : response) {      
-                sb.append(line);
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        HttpUtility.disconnect();
-        return sb.toString();
-    }
-    public String getTournamentMatches(String authTokenRaw, String tournamentsArrayRaw) throws MalformedJsonException, JsonSyntaxException{
-        String tournament_id = JSONUtils.getValueFromArrayElement(tournamentsArrayRaw, "id", 0);                 
-        String requestURL = "https://api.toornament.com/v1/tournaments/" + tournament_id   +"/matches";
-        StringBuilder sb = new StringBuilder();               
-        try {
-            HttpUtility.sendGetRequest(requestURL , JSONUtils.getJsonAttributeValue(authTokenRaw, "access_token"));
-            String[] response = HttpUtility.readMultipleLinesRespone();
-            for (String line : response) {
-                sb.append(line);
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        HttpUtility.disconnect();
-        return sb.toString();
-    }      
-    public String requestToornamentAuthToken(){
-        StringBuilder result = new StringBuilder();
-        Map<String, String> params = new HashMap<String, String>();
-        String requestURL = "https://api.toornament.com/oauth/v2/token";
-        params.put("client_id", "57e98f68150ba076398b456c5q9hvtpk3tgc00kk8s4sgckow40gs4080wgc48ogsc4wg04o8c");
-        params.put("client_secret", "5l9wwq20nugw4gswgoso088gw80wccgcw8sco44oo4g84ooco8");
-        params.put("grant_type", "client_credentials");
-         
-        try {
-            HttpUtility.sendPostRequest(requestURL, params);
-            String[] response = HttpUtility.readMultipleLinesRespone();
-            for (String line : response) {
-                result.append(line);
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        HttpUtility.disconnect();
-        return result.toString();
-    }
-    
-    public void insertTournamentMatchesToDB(String res) throws JSONException{        
-        //cant deal with null information -->>>>>
-        Matches match = new Matches();
-        System.out.println("calling from socketServer ...");
-        //convert res json Array
-        JSONArray jsonArray = new JSONArray(res);
-        //iterate JSONobj in the array inserting the to DB..
-        for (int i = 0; i < jsonArray.length(); i++) {
-            //System.out.println("from for loop the OBJECT");
-            JsonParser parser = new JsonParser();
-            JsonElement json = parser.parse(jsonArray.get(i).toString());
-            JsonObject object = json.getAsJsonObject();
-            object.toString();
-            match.setId(object.get("id").getAsString());
-            match.setType(object.get("type").getAsString());
-            match.setDiscipline(object.get("discipline").getAsString());
-            match.setStatus(object.get("status").getAsString());
-            match.setTournamentId(object.get("tournament_id").getAsString());
-            match.setNumber(object.get("number").getAsInt());
-            match.setStageNumber(object.get("stage_number").getAsInt());
-            match.setGroupNumber(object.get("group_number").getAsInt());
-            match.setRoundNumber(object.get("round_number").getAsInt());
-            
-            match.setTimezone("FI");           
-            
-            match.setMatchFormat("knockout");
-            match.setOpponents(object.get("opponents").toString());
-            
-            dbs.insert(match);
-        }
-        
     }
     
     /**
@@ -187,10 +80,9 @@ public class SocketServer {
  
         Map<String, String> queryParams = getQueryMap(session.getQueryString());
  
-        String name = "";
+        String name = "defaultsessionname";
  
         if (queryParams.containsKey("name")) {
- 
             // Getting client name via query param
             name = queryParams.get("name");
             try {
@@ -211,17 +103,11 @@ public class SocketServer {
  
         try {
             // Sending session id to the client that just connected
-            session.getBasicRemote().sendText(
-                    JSONUtils.getClientDetailsJson(session.getId(),
-                            "Your session details"));
+            session.getBasicRemote().sendText(JSONUtils.createClientDetailsJson(session.getId(), "Welcome to the tournament. Sorry, no time to add dank memes."));
         } catch (IOException e) {
             e.printStackTrace();
         }
- 
-        // Notifying all the clients about new person joined
-        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("match"), name, " is watching the tournament!", true,
-                false);
- 
+        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("match"), name, " is watching the tournament!", true, false);
     }
  
     /**
@@ -235,20 +121,21 @@ public class SocketServer {
  
         System.out.println("Message from " + session.getId() + ": " + message);
  
-        String msg = null;
+        String team = null;
         String match = (String) session.getUserProperties().get("match");
  
         // Parsing the json and getting message
         try {
             JSONObject jObj = new JSONObject(message);
-            msg = jObj.getString("message");
+            team = jObj.getString("team");
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        String name = nameSessionPair.get(session.getId());
  
         // Sending the message to all clients
         sendMessageToAll(session.getId(), (String) session.getUserProperties().get("match"), nameSessionPair.get(session.getId()),
-                msg, false, false);
+                name + " is cheering for team "+team, false, false);
     }
  
     /**
@@ -295,14 +182,14 @@ public class SocketServer {
  
             // Checking if the message is about new client joined
             if (isNewClient) {
-                json = JSONUtils.getNewClientJson(sessionId, name, message, sessions.size());
+                json = JSONUtils.createNewClientJsonString(sessionId, name, message, sessions.size());
  
             } else if (isExit) {
                 // Checking if the person left the conversation
-                json = JSONUtils.getClientExitJson(sessionId, name, message, sessions.size());
+                json = JSONUtils.createClientExitJsonString(sessionId, name, message, sessions.size());
             } else {
                 // Normal chat conversation message
-                json = JSONUtils.getSendAllMessageJson(sessionId, name, message);
+                json = JSONUtils.createSendAllMessageJsonString(sessionId, name, message);
             }
  
             try {

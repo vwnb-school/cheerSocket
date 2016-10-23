@@ -24,13 +24,13 @@ private EntityManager em;
 public Matches insert(Matches m) {        
         System.out.println(m);
         if(getMatches().size()>0){
-            System.out.println("updating...");
+            //System.out.println("updating...");
             em.merge(m);
         } else {
-            System.out.println("inserting...");
+            //System.out.println("inserting...");
             em.persist(m);
         }
-        System.out.println("finished with presist ...");
+        //System.out.println("finished with presist ...");
         return m;
     }
 

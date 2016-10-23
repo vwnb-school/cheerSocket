@@ -32,7 +32,7 @@ public class JSONUtils {
     /**
      * Json when client needs it's own session details
      * */
-    public static String getClientDetailsJson(String sessionId, String message) {
+    public static String createClientDetailsJson(String sessionId, String message) {
         String json = null;
  
         try {
@@ -52,7 +52,7 @@ public class JSONUtils {
     /**
      * Json to notify all the clients about new person joined
      * */
-    public static String getNewClientJson(String sessionId, String name,
+    public static String createNewClientJsonString(String sessionId, String name,
             String message, int onlineCount) {
         String json = null;
  
@@ -75,7 +75,7 @@ public class JSONUtils {
     /**
      * Json when the client exits the socket connection
      * */
-    public static String getClientExitJson(String sessionId, String name,
+    public static String createClientExitJsonString(String sessionId, String name,
             String message, int onlineCount) {
         String json = null;
  
@@ -98,7 +98,7 @@ public class JSONUtils {
     /**
      * JSON when message needs to be sent to all the clients
      * */
-    public static String getSendAllMessageJson(String sessionId, String fromName, String message) {
+    public static String createSendAllMessageJsonString(String sessionId, String fromName, String message) {
         String json = null;
  
         try {

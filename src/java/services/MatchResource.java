@@ -27,7 +27,7 @@ import model.Matches;
  *
  * @author asafgolan
  */
-@Path("match")
+@Path("/match")
 public class MatchResource {
     
     @EJB

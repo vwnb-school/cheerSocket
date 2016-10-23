@@ -3,15 +3,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="http://xmlns.jcp.org/jsf/html">
     <h:head>
-        <title>Facelet Title</title>
+        <title>Faceless title</title>
     </h:head>
     <h:body>
-        Hello from Facelets. IS it really the new version???????????        
-        <h:form>
-            <h:dataTable value="#{viewController.listMatches}" var = "item">
-                <h:column>#{item.id}</h:column> 
-            </h:dataTable>
-        </h:form>    
-        <script src ="/js/socketWebClient.js" />
+        <h1>Java EE is a good web platform, eh???</h1>
+        <button id="testSocket">Connect to socket</button>
+        <button id="testCheer">Test cheer</button>
+        <p id="output">
+            
+        </p>
+        <script src ="js/socketWebClient.js" />
     </h:body>
 </html>
