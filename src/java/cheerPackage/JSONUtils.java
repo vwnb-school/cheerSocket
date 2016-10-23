@@ -8,6 +8,8 @@ package cheerPackage;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.stream.MalformedJsonException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -24,13 +26,13 @@ public class JSONUtils {
     private static final String FLAG_SELF = "self", FLAG_NEW = "new",
             FLAG_MESSAGE = "message", FLAG_EXIT = "exit";
  
-    public JSONUtils() {
+    private JSONUtils() {
     }
  
     /**
      * Json when client needs it's own session details
      * */
-    public String getClientDetailsJson(String sessionId, String message) {
+    public static String getClientDetailsJson(String sessionId, String message) {
         String json = null;
  
         try {
@@ -50,7 +52,7 @@ public class JSONUtils {
     /**
      * Json to notify all the clients about new person joined
      * */
-    public String getNewClientJson(String sessionId, String name,
+    public static String getNewClientJson(String sessionId, String name,
             String message, int onlineCount) {
         String json = null;
  
@@ -73,7 +75,7 @@ public class JSONUtils {
     /**
      * Json when the client exits the socket connection
      * */
-    public String getClientExitJson(String sessionId, String name,
+    public static String getClientExitJson(String sessionId, String name,
             String message, int onlineCount) {
         String json = null;
  
@@ -91,15 +93,12 @@ public class JSONUtils {
         }
  
         return json;
-    }
-    
-    
- 
+    }    
+
     /**
      * JSON when message needs to be sent to all the clients
      * */
-    public String getSendAllMessageJson(String sessionId, String fromName,
-            String message) {
+    public static String getSendAllMessageJson(String sessionId, String fromName, String message) {
         String json = null;
  
         try {
@@ -118,4 +117,36 @@ public class JSONUtils {
         return json;
     }
     
+    public static String getJsonAttributeValue(String rawJson, String attribute) throws MalformedJsonException, JsonSyntaxException {
+        //just a single Json Object
+        JsonParser parser = new JsonParser();
+        JsonElement json = parser.parse(rawJson);
+        if (json.isJsonObject()) {
+            return json.getAsJsonObject().get(attribute).getAsString();
+        } else if (json.isJsonPrimitive()) {
+            return json.getAsString();
+        } else {
+            System.out.println("This function only works on Json objects and primitives, use getValieFromArrayElement for arrays");
+            return null;
+        }
+    }
+
+    public static String getValueFromArrayElement(String jsonArrayString, String attribute, int index) throws MalformedJsonException, JsonSyntaxException {
+        JsonParser parser = new JsonParser();
+        JsonElement json = parser.parse(jsonArrayString);
+        if (json.isJsonArray()) {
+            JsonElement firstItem = json.getAsJsonArray().get(index);
+            if (firstItem.isJsonPrimitive()) {
+                return firstItem.getAsString();
+            } else if (firstItem.isJsonObject()) {
+                return firstItem.getAsJsonObject().get(attribute).getAsString();
+            } else {
+                System.out.println("This function only goes in 1 level (from Array to Object in array, or primitive).");
+                return null;
+            }
+        } else {
+            System.out.println("This function only works on Json arrays.");
+            return null;
+        }
+    }
 }

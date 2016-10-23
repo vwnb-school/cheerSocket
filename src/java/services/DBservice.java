@@ -21,13 +21,16 @@ public class DBservice {
     
 @PersistenceContext
 private EntityManager em;
-    // Add business logic below. (Right-click in editor and choose
-    // "Insert Code > Add Business Method")
-public Matches insert(Matches m) {
-        System.out.println("inserting...");
+public Matches insert(Matches m) {        
         System.out.println(m);
-        em.persist(m);
-        System.out.println("finishe with presist ...");
+        if(getMatches().size()>0){
+            System.out.println("updating...");
+            em.merge(m);
+        } else {
+            System.out.println("inserting...");
+            em.persist(m);
+        }
+        System.out.println("finished with presist ...");
         return m;
     }
 
@@ -40,8 +43,6 @@ public Matches insert(Matches m) {
     }
 
     public List<Matches> getMatches() {
-       
-        
         return em.createNamedQuery("Matches.findAll").getResultList();
     }
 

@@ -29,6 +29,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.stream.MalformedJsonException;
 import java.net.URLEncoder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,12 +43,13 @@ import javax.ejb.EJB;
 import model.Matches;
 import services.DBservice;
  
-@ServerEndpoint(value = "/chat/{room}")
+@ServerEndpoint(value = "/cheer/{match}")
 public class SocketServer {
     private String res;
     private String tournamentName = "MLG Columbus 2018 CS:GO Major";
     //ViewController viewCtrl = new ViewController();
     //ViewController viewCtrl;
+    
     @EJB
     DBservice dbs;
     
@@ -56,9 +59,7 @@ public class SocketServer {
  
     // Mapping between session and person name
     private static final HashMap<String, String> nameSessionPair = new HashMap<String, String>();
- 
-    private JSONUtils jsonUtils = new JSONUtils();
- 
+
     // Getting query params
     public static Map<String, String> getQueryMap(String query) {
         Map<String, String> map = Maps.newHashMap();
@@ -74,11 +75,56 @@ public class SocketServer {
    
     @PostConstruct
     public void init() {
-        
-         
-        System.out.println("=====================================");
-         
-        // test sending POST request
+        boolean updateMatches = false;
+        if(updateMatches){
+            try {
+                System.out.println("=====================================");       
+                String authTokenRaw = requestToornamentAuthToken();            
+                String requestURL = "https://api.toornament.com/v1/tournaments" + "?name=" +  URLEncoder.encode(tournamentName, "UTF-8");
+                String tournamentInfoRaw = getTournamentInfo(authTokenRaw, requestURL);
+                String matchesRaw = getTournamentMatches(authTokenRaw, tournamentInfoRaw);
+                insertTournamentMatchesToDB(matchesRaw);
+            } catch (JSONException | MalformedJsonException | JsonSyntaxException | UnsupportedEncodingException ex) {
+                Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
+                ex.printStackTrace();
+            }
+        }
+        System.out.println("Socket server class initialized.");
+    }
+    
+    public String getTournamentInfo(String authTokenRaw, String URL) throws MalformedJsonException, JsonSyntaxException {           
+        StringBuilder sb = new StringBuilder();
+        try {
+            String authToken = JSONUtils.getJsonAttributeValue(authTokenRaw, "access_token");
+            HttpUtility.sendGetRequest(URL , authToken);
+            String[] response = HttpUtility.readMultipleLinesRespone();
+            for (String line : response) {      
+                sb.append(line);
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        HttpUtility.disconnect();
+        return sb.toString();
+    }
+    public String getTournamentMatches(String authTokenRaw, String tournamentsArrayRaw) throws MalformedJsonException, JsonSyntaxException{
+        String tournament_id = JSONUtils.getValueFromArrayElement(tournamentsArrayRaw, "id", 0);                 
+        String requestURL = "https://api.toornament.com/v1/tournaments/" + tournament_id   +"/matches";
+        StringBuilder sb = new StringBuilder();               
+        try {
+            HttpUtility.sendGetRequest(requestURL , JSONUtils.getJsonAttributeValue(authTokenRaw, "access_token"));
+            String[] response = HttpUtility.readMultipleLinesRespone();
+            for (String line : response) {
+                sb.append(line);
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        HttpUtility.disconnect();
+        return sb.toString();
+    }      
+    public String requestToornamentAuthToken(){
+        StringBuilder result = new StringBuilder();
         Map<String, String> params = new HashMap<String, String>();
         String requestURL = "https://api.toornament.com/oauth/v2/token";
         params.put("client_id", "57e98f68150ba076398b456c5q9hvtpk3tgc00kk8s4sgckow40gs4080wgc48ogsc4wg04o8c");
@@ -89,106 +135,16 @@ public class SocketServer {
             HttpUtility.sendPostRequest(requestURL, params);
             String[] response = HttpUtility.readMultipleLinesRespone();
             for (String line : response) {
-                res = line;
-                //System.out.println(line);
+                result.append(line);
             }
         } catch (IOException ex) {
             ex.printStackTrace();
         }
         HttpUtility.disconnect();
-        /**JsonParser parser = new JsonParser();
-        JsonElement json = parser.parse(res);
-        JsonObject object = json.getAsJsonObject();
-        object.toString();**/
-        //String token = object.get("access_token").getAsString();
-        String token = null;
-        try {
-            token = getAccessToken(res,"access_token");
-            //System.out.println(gson.toJson(resWithBearer));
-            //System.out.println("HERE IS MY TOKEN");
-            //System.out.println(token);
-        } catch (JSONException ex) {
-            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-        try {
-            requestURL = "https://api.toornament.com/v1/tournaments" + "?name=" +  URLEncoder.encode(tournamentName, "UTF-8");
-        } catch (UnsupportedEncodingException ex) {
-            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        try {
-            HttpUtility.sendGetRequest(requestURL , token);
-            String[] response = HttpUtility.readMultipleLinesRespone();
-            for (String line : response) {
-                //System.out.println("HERE the tournament with requested name...");
-                res= line;
-                
-                //System.out.println(line);
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        HttpUtility.disconnect();
-        String tournament_id = null;
-        try {
-            tournament_id =getMatchesByTurnament_id(res, "id");
-            } catch (JSONException ex) {
-            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        requestURL = "https://api.toornament.com/v1/tournaments/" + tournament_id   +"/matches";
-        try {
-            HttpUtility.sendGetRequest(requestURL , token);
-            String[] response = HttpUtility.readMultipleLinesRespone();
-            for (String line : response) {
-                res = line;
-                System.out.println("HERE IS ALL MATCHESSSS  ::::::.....");
-                System.out.println(line);
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        HttpUtility.disconnect();
-        
-   
-        try {
-            insertTournamentMatchesToDB(res);
-        } catch (JSONException ex) {
-            System.out.println("THROWING EXCEPTION");
-            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
-            
-        }
-       
-         
-    
-    }
-    public String getAccessToken (String res, String title) throws JSONException{
-        String value = null;
-            //just a single Json Object
-            JsonParser parser = new JsonParser();
-            JsonElement json = parser.parse(res);
-            System.out.println(json);
-            System.out.println("HERE IS MY value ---->>>");  
-            JsonObject object = json.getAsJsonObject();
-            System.out.println(object.toString());
-            object.toString();
-            value = object.get(title).getAsString();
-            
-            return value;
-        }
-    public String getMatchesByTurnament_id(String res, String title) throws JSONException{
-        String value = null;
-        if(res.charAt(0)=='['){
-            JSONArray jsonArray = new JSONArray(res); 
-            System.out.println("\n"+"\n"+"\n"+"\n"+"\n"+"\n"+"\n"+"\n");
-            System.out.println("PRINT JSON ARRAY -->>>>>");
-            System.out.println(jsonArray.getJSONObject(0).get(title));
-            value = (String) jsonArray.getJSONObject(0).get(title);
-         }
-        return value; 
+        return result.toString();
     }
     
-    public void insertTournamentMatchesToDB(String res) throws JSONException{
-        
+    public void insertTournamentMatchesToDB(String res) throws JSONException{        
         //cant deal with null information -->>>>>
         Matches match = new Matches();
         System.out.println("calling from socketServer ...");
@@ -211,33 +167,23 @@ public class SocketServer {
             match.setGroupNumber(object.get("group_number").getAsInt());
             match.setRoundNumber(object.get("round_number").getAsInt());
             
-            match.setTimezone("FI");
-            /**if(object.get("timeZone").getAsString() == null){
-                System.out.println("THE TIMEZONE...");
-                match.setTimezone("FI");
-            }else{
-                match.setTimezone(object.get("timeZone").getAsString());
-            }**/
+            match.setTimezone("FI");           
             
             match.setMatchFormat("knockout");
             match.setOpponents(object.get("opponents").toString());
-            /**Date today = new Date();
-            today.setHours(0); today.setMinutes(0); today.setSeconds(0);
-            match.setDate(today);**/
-            //viewCtrl.insertMatches(match);
+            
             dbs.insert(match);
         }
         
     }
     
- 
     /**
      * Called when a socket connection opened
      * */
     @OnOpen
-    public void onOpen(Session session, @PathParam("room") final String room) {
+    public void onOpen(Session session, @PathParam("match") final String match) {
  
-        System.out.println(session.getId() + " has opened a connection in room " + room);
+        System.out.println(session.getId() + " has opened a connection to match " + match);
  
         Map<String, String> queryParams = getQueryMap(session.getQueryString());
  
@@ -257,8 +203,8 @@ public class SocketServer {
             nameSessionPair.put(session.getId(), name);
         }
  
-        // Put to room
-        session.getUserProperties().put("room", room);
+        // Put to match
+        session.getUserProperties().put("match", match);
         
         // Adding session to session list
         sessions.add(session);
@@ -266,14 +212,14 @@ public class SocketServer {
         try {
             // Sending session id to the client that just connected
             session.getBasicRemote().sendText(
-                    jsonUtils.getClientDetailsJson(session.getId(),
+                    JSONUtils.getClientDetailsJson(session.getId(),
                             "Your session details"));
         } catch (IOException e) {
             e.printStackTrace();
         }
  
         // Notifying all the clients about new person joined
-        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("room"), name, " joined conversation!", true,
+        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("match"), name, " is watching the tournament!", true,
                 false);
  
     }
@@ -290,7 +236,7 @@ public class SocketServer {
         System.out.println("Message from " + session.getId() + ": " + message);
  
         String msg = null;
-        String room = (String) session.getUserProperties().get("room");
+        String match = (String) session.getUserProperties().get("match");
  
         // Parsing the json and getting message
         try {
@@ -301,7 +247,7 @@ public class SocketServer {
         }
  
         // Sending the message to all clients
-        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("room"), nameSessionPair.get(session.getId()),
+        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("match"), nameSessionPair.get(session.getId()),
                 msg, false, false);
     }
  
@@ -320,7 +266,7 @@ public class SocketServer {
         sessions.remove(session);
  
         // Notifying all the clients about person exit
-        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("room"), name, " left conversation!", false,
+        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("match"), name, " left conversation!", false,
                 true);
  
     }
@@ -333,43 +279,38 @@ public class SocketServer {
      *            message to be sent to clients
      * @param isNewClient
      *            flag to identify that message is about new person joined
-     * @param isExitrooms
+     * @param isExitmatchs
      *            flag to identify that a person left the conversation
      * */
-    private void sendMessageToAll(String sessionId, String room, String name,
+    private void sendMessageToAll(String sessionId, String match, String name,
             String message, boolean isNewClient, boolean isExit) {
  
         // Looping through all the sessions and sending the message individually
         for (Session s : sessions) {
             String json = null;
             
-            if( !room.equals(s.getUserProperties().get("room")) ){
+            if( !match.equals(s.getUserProperties().get("match")) ){
                 continue;
             }
  
             // Checking if the message is about new client joined
             if (isNewClient) {
-                json = jsonUtils.getNewClientJson(sessionId, name, message,
-                        sessions.size());
+                json = JSONUtils.getNewClientJson(sessionId, name, message, sessions.size());
  
             } else if (isExit) {
                 // Checking if the person left the conversation
-                json = jsonUtils.getClientExitJson(sessionId, name, message,
-                        sessions.size());
+                json = JSONUtils.getClientExitJson(sessionId, name, message, sessions.size());
             } else {
                 // Normal chat conversation message
-                json = jsonUtils
-                        .getSendAllMessageJson(sessionId, name, message);
+                json = JSONUtils.getSendAllMessageJson(sessionId, name, message);
             }
  
             try {
-                System.out.println("Sending Message To: " + sessionId + ", "
-                        + json);
+                System.out.println("Sending Message To: " + sessionId + ", " + json);
  
                 s.getBasicRemote().sendText(json);
             } catch (IOException e) {
-                System.out.println("error in sending. " + s.getId() + ", "
-                        + e.getMessage());
+                System.out.println("error in sending. " + s.getId() + ", " + e.getMessage());
                 e.printStackTrace();
             }
         }
