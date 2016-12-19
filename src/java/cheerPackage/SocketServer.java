@@ -121,21 +121,21 @@ public class SocketServer {
  
         System.out.println("Message from " + session.getId() + ": " + message);
  
-        String team = null;
         String match = (String) session.getUserProperties().get("match");
+        String name = nameSessionPair.get(session.getId());
+        JSONObject jObj = null;
  
         // Parsing the json and getting message
         try {
-            JSONObject jObj = new JSONObject(message);
-            team = jObj.getString("team");
+            jObj = new JSONObject(message);
+            jObj.put("cheerleader", name);
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        String name = nameSessionPair.get(session.getId());
- 
+        
+       
         // Sending the message to all clients
-        sendMessageToAll(session.getId(), (String) session.getUserProperties().get("match"), nameSessionPair.get(session.getId()),
-                name + " is cheering for team "+team, false, false);
+        sendMessageToAll(session.getId(), match, name, jObj.toString(), false, false);
     }
  
     /**
